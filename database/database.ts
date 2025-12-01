@@ -1,0 +1,91 @@
+import { Collection, MongoClient, ObjectId, Sort } from "mongodb";
+import { Post, Profile } from "@/types";
+
+const client = new MongoClient(process.env.MONGODB_URI || "mongodb://localhost:27017");
+
+export const postsCollection: Collection<Post> = client.db("y-clone").collection<Post>("post");
+export const profilesCollection: Collection<Profile> = client.db("y-clone").collection<Profile>("profiles");
+
+
+export const seedDatabase = async() => {
+    await postsCollection.deleteMany({});
+    await profilesCollection.deleteMany({});
+
+    const response = await fetch("https://raw.githubusercontent.com/similonap/json/refs/heads/master/y-clone/profiles.json");
+    if (!response.ok) {
+        throw new Error("Fetching profiles went wrong")
+    }
+    const profiles = await response.json() as Profile[];
+    await profilesCollection.insertMany(profiles);
+
+    const responsePosts = await fetch("https://raw.githubusercontent.com/similonap/json/refs/heads/master/y-clone/posts.json");
+    if (!responsePosts.ok) {
+        throw new Error("Fetching posts went wrong")
+    }
+    let posts = await responsePosts.json() as Post[];
+
+    // Randomize likes for demo purposes
+    posts = posts.map(post => ({...post, likes: Math.floor(Math.random() * 100)}));
+
+    await postsCollection.insertMany(posts);
+
+    const postsFromDb = await postsCollection.find().toArray();
+    console.log("Seeded posts:", postsFromDb);  
+    const profilesFromDb = await profilesCollection.find().toArray();
+    console.log("Seeded profiles:", profilesFromDb);
+
+    return { posts: postsFromDb, profiles: profilesFromDb };
+}
+
+export const getPosts = async(q: string = "", sort: string = "newest") => {
+    let sortObject : Sort = { createdOn: -1 }; // Default to newest
+    if (sort === "oldest") {
+        sortObject = { createdOn: 1 };
+    } else if (sort === "most_liked") {
+        sortObject = { likes: -1 };
+    }
+
+
+    let posts = await postsCollection.find({text: new RegExp(q, "i")}).sort(sortObject).toArray();
+    let profiles = await profilesCollection.find().toArray();
+
+    posts.map(post => {
+       return {
+           ...post,
+           profile: profiles.find(p => p.username === post.username)
+       } as Post;
+    });
+
+    return posts;
+}   
+
+export const increaseLikes = async(id: string) => {
+    const post = await postsCollection.findOne({ _id: new ObjectId(id) });
+    if (!post) {
+        throw new Error("Post not found");
+    }
+
+    const updatedLikes = (post.likes || 0) + 1;
+    await postsCollection.updateOne({ _id: new ObjectId(id) }, { $set: { likes: updatedLikes } });
+
+    return updatedLikes;
+}
+
+
+export const addPost = async(text: string) => {
+    let profile = await profilesCollection.findOne({ username: "JonDoe" });
+
+    if (!profile) return;
+
+    const newPost: Partial<Post> = {
+        name: profile.name,
+        username: profile.username,
+        text: text,
+        createdOn: new Date().toISOString(),
+        likes: 0
+    }
+
+    await postsCollection.insertOne(newPost as Post);
+
+    return newPost;
+}
