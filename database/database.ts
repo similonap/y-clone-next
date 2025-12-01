@@ -6,6 +6,7 @@ const client = new MongoClient(process.env.MONGODB_URI || "mongodb://localhost:2
 export const postsCollection: Collection<Post> = client.db("y-clone").collection<Post>("post");
 export const profilesCollection: Collection<Profile> = client.db("y-clone").collection<Profile>("profiles");
 
+export const PAGE_SIZE = 10;
 
 export const seedDatabase = async() => {
     await postsCollection.deleteMany({});
@@ -37,7 +38,12 @@ export const seedDatabase = async() => {
     return { posts: postsFromDb, profiles: profilesFromDb };
 }
 
-export const getPosts = async(q: string = "", sort: string = "newest") => {
+export const getPagesCount = async(q: string = "") => {
+    const totalPosts = await postsCollection.countDocuments({text: new RegExp(q, "i")});
+    return Math.ceil(totalPosts / PAGE_SIZE); 
+}
+
+export const getPosts = async(q: string = "", sort: string = "newest", page: number = 1) => {
     let sortObject : Sort = { createdOn: -1 }; // Default to newest
     if (sort === "oldest") {
         sortObject = { createdOn: 1 };
@@ -46,10 +52,10 @@ export const getPosts = async(q: string = "", sort: string = "newest") => {
     }
 
 
-    let posts = await postsCollection.find({text: new RegExp(q, "i")}).sort(sortObject).toArray();
+    let posts = await postsCollection.find({text: new RegExp(q, "i")}).sort(sortObject).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).toArray();
     let profiles = await profilesCollection.find().toArray();
 
-    posts.map(post => {
+    posts = posts.map(post => {
        return {
            ...post,
            profile: profiles.find(p => p.username === post.username)

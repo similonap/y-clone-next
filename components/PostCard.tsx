@@ -6,6 +6,7 @@ export interface PostCardProps {
 }
 
 const PostCard = ({post} : PostCardProps) => { 
+    console.log(post);
     return (
         <div className="border border-gray-300 dark:border-gray-700 rounded-lg p-4 mb-4 bg-white dark:bg-zinc-900 shadow-sm dark:shadow-zinc-800/50">
             <div className="flex items-center mb-2">
