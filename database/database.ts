@@ -6,9 +6,9 @@ const client = new MongoClient(process.env.MONGODB_URI || "mongodb://localhost:2
 export const postsCollection: Collection<Post> = client.db("y-clone").collection<Post>("post");
 export const profilesCollection: Collection<Profile> = client.db("y-clone").collection<Profile>("profiles");
 
-export const PAGE_SIZE = 10;
+export const PAGE_SIZE = 5;
 
-export const seedDatabase = async() => {
+export const seedDatabase = async () => {
     await postsCollection.deleteMany({});
     await profilesCollection.deleteMany({});
 
@@ -26,25 +26,54 @@ export const seedDatabase = async() => {
     let posts = await responsePosts.json() as Post[];
 
     // Randomize likes for demo purposes
-    posts = posts.map(post => ({...post, likes: Math.floor(Math.random() * 100)}));
+    posts = posts.map(post => ({ ...post, likes: Math.floor(Math.random() * 100) }));
 
     await postsCollection.insertMany(posts);
 
     const postsFromDb = await postsCollection.find().toArray();
-    console.log("Seeded posts:", postsFromDb);  
+    console.log("Seeded posts:", postsFromDb);
     const profilesFromDb = await profilesCollection.find().toArray();
     console.log("Seeded profiles:", profilesFromDb);
 
     return { posts: postsFromDb, profiles: profilesFromDb };
 }
 
-export const getPagesCount = async(q: string = "") => {
-    const totalPosts = await postsCollection.countDocuments({text: new RegExp(q, "i")});
-    return Math.ceil(totalPosts / PAGE_SIZE); 
+export const getProfileByUsername = async (username: string) => {
+    const profile = await profilesCollection.findOne({ username: username });
+
+    if (!profile) {
+        throw new Error("Profile not found");
+    }
+
+    return profile;
 }
 
-export const getPosts = async(q: string = "", sort: string = "newest", page: number = 1) => {
-    let sortObject : Sort = { createdOn: -1 }; // Default to newest
+export const getPostsByUsername = async (username: string, sort: string = "newest", page: number = 1) => {
+    let sortObject: Sort = { createdOn: -1 }; 
+    if (sort === "oldest") {
+        sortObject = { createdOn: 1 };
+    } else if (sort === "most_liked") {
+        sortObject = { likes: -1 };
+    }
+
+    let posts = await postsCollection.find({ username: username }).sort(sortObject).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).toArray();
+    const profile = await getProfileByUsername(username);
+
+    posts = posts.map(post => {
+        return {
+            ...post,
+            profile: profile
+        } as Post;
+    });
+
+    const totalPosts = await postsCollection.countDocuments({ username: username });
+    const pages = Math.ceil(totalPosts / PAGE_SIZE);
+
+    return { posts, pages };
+}
+
+export const getPosts = async (q: string = "", sort: string = "newest", page: number = 1) => {
+    let sortObject: Sort = { createdOn: -1 };
     if (sort === "oldest") {
         sortObject = { createdOn: 1 };
     } else if (sort === "most_liked") {
@@ -52,20 +81,24 @@ export const getPosts = async(q: string = "", sort: string = "newest", page: num
     }
 
 
-    let posts = await postsCollection.find({text: new RegExp(q, "i")}).sort(sortObject).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).toArray();
+    let posts = await postsCollection.find({ text: new RegExp(q, "i") }).sort(sortObject).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).toArray();
     let profiles = await profilesCollection.find().toArray();
 
     posts = posts.map(post => {
-       return {
-           ...post,
-           profile: profiles.find(p => p.username === post.username)
-       } as Post;
+        return {
+            ...post,
+            profile: profiles.find(p => p.username === post.username)
+        } as Post;
     });
 
-    return posts;
-}   
+    const totalPosts = await postsCollection.countDocuments({ text: new RegExp(q, "i") });
+    const pages = Math.ceil(totalPosts / PAGE_SIZE);
 
-export const increaseLikes = async(id: string) => {
+
+    return { posts, pages };
+}
+
+export const increaseLikes = async (id: string) => {
     const post = await postsCollection.findOne({ _id: new ObjectId(id) });
     if (!post) {
         throw new Error("Post not found");
@@ -78,7 +111,7 @@ export const increaseLikes = async(id: string) => {
 }
 
 
-export const addPost = async(text: string) => {
+export const addPost = async (text: string) => {
     let profile = await profilesCollection.findOne({ username: "JonDoe" });
 
     if (!profile) return;

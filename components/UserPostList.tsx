@@ -1,16 +1,17 @@
-import { getPosts } from "@/database/database";
+import { getPostsByUsername } from "@/database/database";
 import Pagination from "./Pagination";
 import PostCard from "./PostCard";
 import { PostCardSkeleton } from "./PostCard";
 
-interface PostListProps {
-    q: string;
+
+interface UserPostListProps {
+    username: string;
     sort: string;
     currentPage: number;
 }
 
-const PostList = async({q, sort, currentPage} : PostListProps) => {
-    const {posts, pages } = await getPosts(q, sort, currentPage);
+const UserPostList = async({username, sort = "newest", currentPage = 1} : UserPostListProps) => {
+    const {posts, pages } = await getPostsByUsername(username, sort, currentPage);
 
     return (
         <div className="flex-1 flex-col gap-4">
@@ -35,4 +36,4 @@ export const PostListSkeleton = () => {
     );
 };
 
-export default PostList;
+export default UserPostList;
