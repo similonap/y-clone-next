@@ -6,6 +6,7 @@ export interface Profile {
     bio: string;
     avatarUrl: string;
     bannerUrl: string;
+    password: string;
 }
 
 export interface Post {

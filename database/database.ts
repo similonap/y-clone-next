@@ -1,5 +1,7 @@
 import { Collection, MongoClient, ObjectId, Sort } from "mongodb";
 import { Post, Profile } from "@/types";
+import bcrypt from "bcrypt";
+
 
 const client = new MongoClient(process.env.MONGODB_URI || "mongodb://localhost:27017");
 
@@ -7,6 +9,7 @@ export const postsCollection: Collection<Post> = client.db("y-clone").collection
 export const profilesCollection: Collection<Profile> = client.db("y-clone").collection<Profile>("profiles");
 
 export const PAGE_SIZE = 5;
+export const SALT_ROUNDS = 10;
 
 export const seedDatabase = async () => {
     await postsCollection.deleteMany({});
@@ -17,6 +20,11 @@ export const seedDatabase = async () => {
         throw new Error("Fetching profiles went wrong")
     }
     const profiles = await response.json() as Profile[];
+
+    for (let profile of profiles) {
+        let hashedPassword : string = await bcrypt.hash(profile.password, SALT_ROUNDS);
+        profile.password = hashedPassword;
+    }
     await profilesCollection.insertMany(profiles);
 
     const responsePosts = await fetch("https://raw.githubusercontent.com/similonap/json/refs/heads/master/y-clone/posts.json");
@@ -47,6 +55,20 @@ export const getProfileByUsername = async (username: string) => {
 
     return profile;
 }
+
+export const loginUser = async (username: string, password: string) => {
+    const profile = await profilesCollection.findOne({ username: username });
+    if (!profile) {
+        throw new Error("Profile not found");
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, profile.password);
+    if (!isPasswordValid) {
+        throw new Error("Invalid password");
+    }
+
+    return profile;
+}   
 
 export const getPostsByUsername = async (username: string, sort: string = "newest", page: number = 1) => {
     let sortObject: Sort = { createdOn: -1 }; 
@@ -111,8 +133,8 @@ export const increaseLikes = async (id: string) => {
 }
 
 
-export const addPost = async (text: string) => {
-    let profile = await profilesCollection.findOne({ username: "JonDoe" });
+export const addPost = async (text: string,username: string) => {
+    let profile = await profilesCollection.findOne({ username: username });
 
     if (!profile) return;
 

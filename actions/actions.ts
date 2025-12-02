@@ -1,7 +1,9 @@
 'use server'
 
-import { addPost } from "@/database/database";
+import { addPost, loginUser } from "@/database/database";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import * as jwt from "jsonwebtoken";
 
 interface CreatePostState {
     success: boolean;
@@ -18,7 +20,19 @@ export const createPost = async (prevState: CreatePostState, formData: FormData)
         }
     }
 
-    await addPost(text);
+    const cookieStore = await cookies();
+    const jwtCookie = cookieStore.get("jwt");
+
+    if (!jwtCookie) {
+        return {
+            success: false,
+            message: 'User not authenticated.'
+        }
+    }
+
+    let {username} = jwt.decode(jwtCookie.value) as { username: string };
+
+    await addPost(text, username);
 
     revalidatePath('/');
 
@@ -28,4 +42,40 @@ export const createPost = async (prevState: CreatePostState, formData: FormData)
     }
 }
 
-export interface FormState {}
+export interface LoginState {
+    success: boolean;
+    message: string;
+}
+
+export const login = async (prevState: CreatePostState, formData: FormData) => {
+    try {
+        const username = formData.get('username')?.toString() || '';
+        const password = formData.get('password')?.toString() || '';
+
+        let profile = await loginUser(username, password);
+
+        const cookieStore = await cookies();
+
+        const token = jwt.sign(profile, process.env.JWT_SECRET!, { expiresIn: "7d" });
+
+        cookieStore.set({
+            name: "jwt",
+            value: token,
+            httpOnly: true,
+            sameSite: "lax",
+            secure: true,
+        });
+
+        
+
+        return {
+            success: true,
+            message: 'Login successful!'
+        }
+    } catch (error: any) {
+        return {
+            success: false,
+            message: error.message || 'Login failed.'
+        }
+    }
+}
