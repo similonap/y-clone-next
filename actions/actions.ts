@@ -4,6 +4,7 @@ import { addPost, loginUser } from "@/database/database";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import * as jwt from "jsonwebtoken";
+import { redirect } from "next/navigation";
 
 interface CreatePostState {
     success: boolean;
@@ -45,6 +46,14 @@ export const createPost = async (prevState: CreatePostState, formData: FormData)
 export interface LoginState {
     success: boolean;
     message: string;
+}
+
+export const logout = async () => {
+    const cookieStore = await cookies();
+    cookieStore.delete("jwt");
+    revalidatePath('/');
+    redirect('/auth/login');
+    return;
 }
 
 export const login = async (prevState: CreatePostState, formData: FormData) => {
