@@ -1,4 +1,5 @@
-import Sidebar from "@/components/Sidebar";
+import MenuBar from "@/components/MenuBar";
+import SideBar from "@/components/SideBar";
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -7,10 +8,11 @@ interface MainLayoutProps {
 const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <MenuBar />
       <main role="main" className="flex-1">
         {children}
       </main>
+      <SideBar />
     </div>
   );
 };
