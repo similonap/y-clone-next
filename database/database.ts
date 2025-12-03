@@ -26,7 +26,6 @@ export const seedDatabase = async () => {
     }
     let posts = await responsePosts.json() as Post[];
 
-    // Randomize likes for demo purposes
     posts = posts.map(post => ({ ...post, likes: Math.floor(Math.random() * 100) }));
 
     await postsCollection.insertMany(posts);
@@ -70,6 +69,7 @@ export const getPostsByUsername = async (username: string, sort: string = "newes
     const totalPosts = await postsCollection.countDocuments({ username: username });
     const pages = Math.ceil(totalPosts / PAGE_SIZE);
 
+
     return { posts, pages };
 }
 
@@ -95,6 +95,8 @@ export const getPosts = async (q: string = "", sort: string = "newest", page: nu
     const totalPosts = await postsCollection.countDocuments({ text: new RegExp(q, "i") });
     const pages = Math.ceil(totalPosts / PAGE_SIZE);
 
+
+    await new Promise((resolve, reject) => setTimeout(() => resolve(null), 10000))
 
     return { posts, pages };
 }
