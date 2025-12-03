@@ -1,10 +1,10 @@
 import Sidebar from "@/components/Sidebar";
 
-export default function MainLayout({
+const MainLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) {
+}>) => {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -13,4 +13,6 @@ export default function MainLayout({
       </main>
     </div>
   );
-}
+};
+
+export default MainLayout;
