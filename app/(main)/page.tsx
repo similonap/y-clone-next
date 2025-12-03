@@ -1,5 +1,4 @@
 
-import LogoutButton from "@/components/LogoutButton";
 import PostList, { PostListSkeleton } from "@/components/PostList";
 import PostMessage from "@/components/PostMessage";
 import SearchBox from "@/components/SearchBox";
@@ -15,7 +14,6 @@ export default async function Home(props: PageProps<"/">) {
 
     return (
         <div className="flex min-h-screen flex-col items-stretch justify-center p-4 bg-zinc-50 font-sans dark:bg-black">
-            <LogoutButton/>
             <PostMessage />
             <div className="flex flex-1 flex-col">
                 <div className="flex items-center justify-between gap-4">
