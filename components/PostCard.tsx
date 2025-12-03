@@ -1,6 +1,5 @@
 
 import { Post } from "@/types";
-import LikeButton from "./LikeButton";
 import Link from "next/link";
 
 export interface PostCardProps {
@@ -28,8 +27,6 @@ const PostCard = ({post} : PostCardProps) => {
             </div>
             <p className="text-gray-800 dark:text-gray-200 mb-2">{post.text}</p>
             <p className="text-sm text-gray-400 dark:text-gray-500">{post.createdOn.split('T')[0]} {post.createdOn.split('T')[1].split('.')[0]}</p>
-
-            <LikeButton post={post}/>
         </div>
     );
 };

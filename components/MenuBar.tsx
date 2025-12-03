@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { logout } from "@/actions/actions";
-import { Home, LogOut } from "lucide-react";
+import { Home } from "lucide-react";
 
 const MenuBar = () => {
     return (
@@ -27,18 +26,7 @@ const MenuBar = () => {
                 </ul>
             </nav>
             
-            {/* Logout Button */}
-            <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
-                <form action={logout}>
-                    <button
-                        type="submit"
-                        className="flex items-center gap-4 w-full px-3 py-3 text-xl font-medium text-gray-900 dark:text-white rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-                    >
-                        <LogOut className="w-7 h-7" />
-                        <span>Logout</span>
-                    </button>
-                </form>
-            </div>
+          
         </aside>
     );
 };
